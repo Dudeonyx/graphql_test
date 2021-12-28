@@ -31,7 +31,12 @@ const books = [
   { id: 8, name: 'Beyond the Shadows', authorId: 3 },
 ];
 
-const BookType = new GraphQLObjectType<{ id: number; name: string; authorId: number }>({
+const BookType: GraphQLObjectType<{
+  id: number;
+  name: string;
+  authorId: number;
+  author: typeof AuthorType;
+}> = new GraphQLObjectType({
   name: 'Book',
   description: 'This represents a book written by an author',
   fields: () => ({
@@ -45,20 +50,26 @@ const BookType = new GraphQLObjectType<{ id: number; name: string; authorId: num
   }),
 });
 
-const AuthorType = new GraphQLObjectType<{ id: number; name: string; books: typeof books[] }, any>({
-  name: 'Author',
-  description: 'This represents an author',
-  fields: () => ({
-    id: { type: GraphQLNonNull(GraphQLInt) },
-    name: { type: GraphQLNonNull(GraphQLString) },
-    books: {
-      type: GraphQLList(BookType),
-      resolve: (author) => books.filter((book) => book.authorId === author.id),
-    },
-  }),
-});
+const AuthorType: GraphQLObjectType<{ id: number; name: string; books: typeof BookType[] }> =
+  new GraphQLObjectType({
+    name: 'Author',
+    description: 'This represents an author',
+    fields: () => ({
+      id: { type: GraphQLNonNull(GraphQLInt) },
+      name: { type: GraphQLNonNull(GraphQLString) },
+      books: {
+        type: GraphQLList(BookType),
+        resolve: (author) => books.filter((book) => book.authorId === author.id),
+      },
+    }),
+  });
 
-const RootQueryType = new GraphQLObjectType({
+const RootQueryType: GraphQLObjectType<{
+  books: typeof BookType[];
+  authors: typeof AuthorType[];
+  book: typeof BookType;
+  author: typeof AuthorType;
+}> = new GraphQLObjectType({
   name: 'Query',
   description: 'Root Query',
   fields: () => ({
@@ -150,13 +161,6 @@ type Query {
 const root = {
   books: () => books,
   authors: () => authors,
-};
-
-const field = {
-  Book: {
-    t: 5,
-    author: (parent) => authors.find((author) => author.id === parent.authorId),
-  },
 };
 
 app.use(
